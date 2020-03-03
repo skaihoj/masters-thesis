@@ -23,6 +23,7 @@
       <link name="body">
 
 	<!--<mass>1.0</mass>-->
+	<gravity>0</gravity>
 
 	<collision name="collision">
           <geometry>
@@ -40,6 +41,7 @@
       <link name="rudder">
 
 	<!--<mass>1.0</mass>-->
+	<gravity>0</gravity>
 
 	<collision name="collision">
           <geometry>
