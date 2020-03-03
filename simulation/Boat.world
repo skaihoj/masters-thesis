@@ -5,7 +5,7 @@
     <!--<real_time_update_rate>0.0100000</real_time_update_rate>
     <max_step_size>10.000</max_step_size>-->
 
-    <gravity>0</gravity>
+    <!--<gravity>0</gravity> -->
 
     <include>
       <uri>model://ground_plane</uri>
@@ -54,7 +54,7 @@
         </visual>
       </link>
 
-	<plugin name="BoatCode" filename="libBoatCode.so"/>
+	<plugin name="BoatCode" filename="build/libBoatCode.so"/>
     </model>
   </world>
 </sdf>

@@ -5,7 +5,16 @@
 #include <ignition/math/Vector3.hh>
 #include <stdio.h>
 #include <math.h>
-#include <ignition/math/Pose3.hh>
+
+
+
+#if GAZEBO_MAJOR_VERSION >= 9
+  #include <ignition/math/Pose3.hh>
+#else
+  #include <gazebo/math/gzmath.hh>
+#endif
+
+
 #include <iostream>
 #include <fstream>
 
@@ -83,10 +92,21 @@ namespace gazebo
             std::cout << "===========================| " << counter << " |===========================" << std::endl << std::endl;
             counter++;
 
+#if GAZEBO_MAJOR_VERSION >= 9
             // Hull
             this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2), X(3), X(4), X(5)));
             // Rudder
             this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
+
+#else
+            // Hull
+            this->model->GetLink("body")->SetWorldPose(math::Pose(X(0), X(1), X(2), X(3), X(4), X(5)));
+            // Rudder
+            this->model->GetLink("rudder")->SetWorldPose(math::Pose(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
+
+#endif
+
+
 
 
             MC.Update(m, rgb, Ib, MA, V);
