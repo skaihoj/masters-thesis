@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<sdf version="1.4">
+  <world name="default">
+
+    <!--<real_time_update_rate>0.0100000</real_time_update_rate>
+    <max_step_size>10.000</max_step_size>-->
+
+    <!--<gravity>0</gravity> -->
+
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <model name="Boat_Model">
+      <pose>0 0 0 0 0 0</pose>
+
+      <static>false</static>
+
+      <link name="body">
+
+	<!--<mass>1.0</mass>-->
+	<gravity>0</gravity>
+
+	<collision name="collision">
+          <geometry>
+            <mesh><uri>file://Boat1V3.dae</uri></mesh>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>file://Boat1V3.dae</uri></mesh>
+          </geometry>
+        </visual>
+      </link>
+
+      <link name="rudder">
+
+	<!--<mass>1.0</mass>-->
+	<gravity>0</gravity>
+
+	<collision name="collision">
+          <geometry>
+            <mesh><uri>file://Rudder1.dae</uri></mesh>
+          </geometry>
+        </collision>
+
+        <visual name="visual">
+          <geometry>
+            <mesh><uri>file://Rudder1.dae</uri></mesh>
+          </geometry>
+        </visual>
+      </link>
+
+	<plugin name="BoatCode" filename="libBoatCode.so"/>
+    </model>
+  </world>
+</sdf>
