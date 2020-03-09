@@ -5,21 +5,32 @@
 #include <ignition/math/Vector3.hh>
 #include <stdio.h>
 #include <math.h>
-#include <ignition/math/Pose3.hh>
+
+
+
+#if GAZEBO_MAJOR_VERSION >= 9
+  #include <ignition/math/Pose3.hh>
+#else
+  #include <gazebo/math/gzmath.hh>
+#endif
+
+
 #include <iostream>
 #include <fstream>
 
-#include "RMatrix.cc"
-#include "Buoyancy.cc"
-#include "Drag.cc"
-#include "DynMod.cc"
-#include "MassCoreolis.cc"
-#include "Thrust.cc"
-#include "Wind.cc"
-#include "DebugClass.cc"
+#include "RMatrix.hh"
+#include "Buoyancy.hh"
+#include "Drag.hh"
+#include "DynMod.hh"
+#include "MassCoreolis.hh"
+#include "Thrust.hh"
+#include "Wind.hh"
 
 //#include <eigen3/Eigen/Dense>
 #include <eigen/Eigen/Dense>
+
+#include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
 
 namespace gazebo
 {
@@ -40,7 +51,8 @@ namespace gazebo
             // ================================================| vvv GO DOWN vvv |================================================
             // ================================================| vvv GO DOWN vvv |================================================
             //
-
+            sub = n.subscribe("key_vel", 1, &BoatCode::updateinput, this);
+            
             Ib(0, 0) = 1.0;
             Ib(1, 1) = 1.0;
             Ib(2, 2) = 1.0;
@@ -61,7 +73,7 @@ namespace gazebo
             GML = 1;
 
             r << -1, 0, 0;
-            f = 1.0;
+            f = 0.0;
             alfa = 0.0;
 
             rhoa = 1.25;
@@ -74,20 +86,8 @@ namespace gazebo
             Vw = 0.0;
             betaw = 0.0;
 
-            // Open file 
-            fileIsOpen = true;
 
-            StateFile.open("State_log.csv");
-            StateFile << "Log of states and positions.\n";
-            StateFile << "x,y,z,phi,theta,psi,u,v,w,r,p,q\n";
-
-            MFile.open("M_log.csv");
-            MFile << "Log of added mass matrix\n";
-            DC.WriteMatrix6header(MFile, M);
-
-            TauFile.open("Tau_log.csv");
-            TauFile << "Log of thrust vector\n";
-            TauFile << "Tx, Ty, Tz, Mx, My, Mz\n";
+            X(2) = 0.5;
         }
 
         // Called by the world update start event
@@ -96,14 +96,22 @@ namespace gazebo
             std::cout << "===========================| " << counter << " |===========================" << std::endl << std::endl;
             counter++;
 
+#if GAZEBO_MAJOR_VERSION >= 9
             // Hull
-            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2)+0.5, X(3), X(4), (X(5))));
+            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2), X(3), X(4), X(5)));
             // Rudder
-            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)), X(3), X(4), (X(5)+3.14+alfa)));
+            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
 
-            phi = X(3);
-            th = X(4);
-            psi = X(5);
+#else
+            // Hull
+            this->model->GetLink("body")->SetWorldPose(math::Pose(X(0), X(1), X(2), X(3), X(4), X(5)));
+            // Rudder
+            this->model->GetLink("rudder")->SetWorldPose(math::Pose(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
+
+#endif
+
+
+
 
             MC.Update(m, rgb, Ib, MA, V);
             M = MC.Mass();
@@ -114,70 +122,57 @@ namespace gazebo
             DR.Update(D, Vr);
             DofVr = DR.DofVr();
 
-            iAwp = X(2);
-
             BOY.UpdateGeta(iAwp, rho, gravity, nab, GMT, GML, phi, th);
             gEta = BOY.Geta();
 
             BOY.UpdateG0(rho, gravity, Vi, xi, yi);
             g0 = BOY.G0();
 
-            alfa = (M_PI/4)*sin(counter*sampleTime*0.25);
+            //alfa = (M_PI/4)*sin(counter*sampleTime);
+            //rot1 = RM.Rx(X(3))*RM.Ry(X(4))*RM.Rz(X(5));
+            rot1 = RM.Rz(X(5))*RM.Ry(X(4))*RM.Rx(X(3));
+            
+            TT.block<3,3>(0,0) = rot1;
+            TT.block<3,3>(0,3) = zero3;
+            TT.block<3,3>(3,0) = zero3;
+            TT.block<3,3>(3,3) = rot1;
+            
 
             THR.Update(r, f, alfa);
             tau = THR.Tau();
+            
+            
+            tau = TT*tau;
+            cout << "TT matrix: \n" << TT << endl;
+            
 
-            WI.UpdateWindrw(V(0), V(1), Vw, betaw, psi);
+            WI.UpdateWindrw(V(3), V(4), Vw, betaw, psi);
             Vrw = WI.Vrw();
-
-            Gamrw = WI.Gamrw();
-
-            Ci = Gamrw*OneVec6;
 
             WI.UpdateWind(rhoa, Vrw, Ci, AFw, ALw, HFw, HLw, Loa);
             tau_wind = WI.TauWind();
 
             cout << "Positions: \n" << X << endl;
-            cout << "Velocities: \n" << Etad << endl;
+            cout << "Velocities: \n" << V << endl;
 
-            DM.UpdateBODY(V, M, C, DofVr, gEta, g0, tau, tau_wind, tau_wave);
-
-            J = RM.JofETa(phi, th, psi);
-            Jd = (J - Jold)/sampleTime;
-            Jold = J;
-
-            DM.UpdateNED(J, Jd, Etad, M, C, DofVr, gEta, g0, tau, tau_wind, tau_wave);
-
+            DM.Update(V, M, C, DofVr, gEta, g0, tau, tau_wind, tau_wave);
+            
             V = V + DM.Vd()*sampleTime;
 
-            Etad = Etad + DM.Etadd()*sampleTime;
-
-            X = X + Etad*sampleTime;
-
-            // Write to file 
-            if(counter < 60000)
-            {
-                StateFile << X(0) << "," << X(1) << "," << X(2) << "," << X(3) << "," << X(4) << "," << X(5) << "," << 
-                           Etad(0) << "," << Etad(1) << "," << Etad(2) << "," << Etad(3) << "," << Etad(4) << "," << Etad(5) << "\n";
-
-                TauFile << tau(0) << "," << tau(1) << "," << tau(2) << "," << tau(3) << "," << tau(4) << "," << tau(5) << "\n";
-            }
-            else
-            {
-                if(fileIsOpen)
-                {
-                    DC.WriteMatrix6toFile(MFile, M);
-
-                    fileIsOpen = false;
-
-                    StateFile.close();
-                    MFile.close();
-                    TauFile.close();
-                }
-            }
+            X = X + V*sampleTime;
+        }
+        void updateinput(const geometry_msgs::TwistConstPtr &msg)
+        {
+            f = msg->linear.x;
+            alfa = msg-> angular.z;
             
         }
-
+        
+        
+        
+        
+        
+        
         // Creating Function instances
         RMatrix RM;
         DynMod DM;
@@ -187,12 +182,16 @@ namespace gazebo
         Thrust THR;
         Wind WI;
 
-        // Debug instance 
-        DebugClass DC;
+
 
         // Variables 
         private: 
             int counter = 0;
+            
+            Eigen::Matrix3d rot1 = Eigen::Matrix3d::Constant(0.0);
+            Eigen::Matrix3d zero3 = Eigen::Matrix3d::Constant(0.0);
+            
+            Eigen::Matrix<double, 6, 6> TT = Eigen::Matrix<double, 6, 6>::Constant(0.0);
 
             // Dynamic Model variables 
             Eigen::Matrix<double, 6, 1> V = Eigen::Matrix<double, 6, 1>::Constant(0.0);
@@ -208,13 +207,7 @@ namespace gazebo
 
             Eigen::Matrix<double, 6, 1> tau = Eigen::Matrix<double, 6, 1>::Constant(0.0);
             Eigen::Matrix<double, 6, 1> tau_wind = Eigen::Matrix<double, 6, 1>::Constant(0.0);
-            Eigen::Matrix<double, 6, 1> tau_wave = Eigen::Matrix<double, 6, 1>::Constant(0.0); 
-
-            // BODY to NED transformation variables
-            Eigen::Matrix<double, 6, 1> Etad = Eigen::Matrix<double, 6, 1>::Constant(0.0);
-            Eigen::Matrix<double, 6, 6> J = Eigen::Matrix<double, 6, 6>::Constant(0.0);
-            Eigen::Matrix<double, 6, 6> Jd = Eigen::Matrix<double, 6, 6>::Constant(0.0);
-            Eigen::Matrix<double, 6, 6> Jold = Eigen::Matrix<double, 6, 6>::Constant(0.0);
+            Eigen::Matrix<double, 6, 1> tau_wave = Eigen::Matrix<double, 6, 1>::Constant(0.0);
 
             // General orientation 
             double phi = 0.0;
@@ -224,7 +217,6 @@ namespace gazebo
             // Wind variables 
             double rhoa = 0.0;
             double Vrw = 0.0;
-            double Gamrw = 0.0;
             Eigen::Matrix<double, 6, 1> Ci = Eigen::Matrix<double, 6, 1>::Constant(0.0);
             double AFw = 0.0;
             double ALw = 0.0;
@@ -265,25 +257,18 @@ namespace gazebo
             Eigen::Matrix<double, 6, 6> MA = Eigen::Matrix<double, 6, 6>::Constant(0.0);
 
 
-            // Temporary variables 
-            Eigen::Matrix<double, 6, 1> OneVec6 = Eigen::Matrix<double, 6, 1>::Constant(1.0);
-
             //double temperature = 20.0;
             //double pressure = 101325.0;
 
-            // File writing variables 
-            bool fileIsOpen;
-
-            ofstream StateFile;
-            ofstream MFile;
-            ofstream TauFile;
 
         // Constants 
         private: 
             const double sampleTime = 0.001;
             const double gravity = 9.81;
             //const double airGasConst = 287.058;
-
+        private:
+            ros::NodeHandle n;
+            ros::Subscriber sub;
 
         //
         // ================================================| ^^^ GO UP ^^^ |================================================

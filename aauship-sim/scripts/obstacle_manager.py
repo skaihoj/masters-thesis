@@ -18,7 +18,7 @@ xml = """<?xml version='1.0'?>
             <collision name='collision'>
               <geometry>
                 <box>
-                  <size>.4 .2 .1</size>
+                  <size>{0} {1} .1</size>
                 </box>
               </geometry>
             </collision>
@@ -26,7 +26,7 @@ xml = """<?xml version='1.0'?>
             <visual name='visual'>
               <geometry>
                 <box>
-                  <size>.4 .2 .1</size>
+                  <size>{0} {1} .1</size>
                 </box>
               </geometry>
             </visual>
@@ -54,9 +54,9 @@ class Obstacle:
         self.name = name
     
     def update_obs(self):
-        print ('update of ' + self.name)
         delta_x = self.vel*self.pos.orientation.z*timestep
         delta_y = self.vel*self.pos.orientation.w*timestep
+        print ('update of ' + self.name + ' position ' + str(self.pos.position.x) + ' ' + str(self.pos.position.y))
         self.pos.position.x = self.pos.position.x + delta_x
         self.pos.position.y = self.pos.position.y + delta_y
         state = ModelState(self.name, self.pos, Twist(), '')
@@ -67,7 +67,8 @@ class Obstacle:
     
 def spawn(pos, vel, size):
     global obs_num
-    spawn_gazebo('obs_'+str(obs_num), xml, '/', pos, '')
+    new_xml = xml.format(size[0], size[1])
+    spawn_gazebo('obs_'+str(obs_num), new_xml, '/', pos, '')
     obs_list.append(Obstacle(pos, vel, size, 'obs_'+str(obs_num)))
     obs_num = obs_num + 1
 
@@ -86,12 +87,14 @@ if __name__ == "__main__":
     rospy.wait_for_service('gazebo/spawn_sdf_model')
     spawn_gazebo = rospy.ServiceProxy('gazebo/spawn_sdf_model', SpawnModel)
     
-    pos = Pose()
+
     for i in range(10):
-        pos.position.x = i
+        pos = Pose()
+        pos.position.x = i * 10
         pos.position.z = 1.0
         pos.orientation = Quaternion(*quaternion_from_euler(0,0,1))
-        spawn(pos, 1,0)
+        spawn(pos, 1,[i+1,1])
+        
     rospy.Timer(rospy.Duration(timestep), do_updates)
     while not rospy.is_shutdown():
         rospy.spin
