@@ -110,15 +110,15 @@ namespace gazebo
 
 #if GAZEBO_MAJOR_VERSION >= 9
             // Hull
-            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2), X(3), X(4), X(5)));
+            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2)+0.5, X(3), X(4), (X(5))));
             // Rudder
-            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
+            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)), X(3), X(4), (X(5)+3.14+alfa)));
 
 #else
             // Hull
-            this->model->GetLink("body")->SetWorldPose(math::Pose(X(0), X(1), X(2), X(3), X(4), X(5)));
+            this->model->GetLink("body")->SetWorldPose(math::Pose(X(0), X(1), X(2)+0.5, X(3), X(4), (X(5))));
             // Rudder
-            this->model->GetLink("rudder")->SetWorldPose(math::Pose(X(0), X(1), (X(2)-0.5), X(3), X(4), (X(5)+3.14+alfa)));
+            this->model->GetLink("rudder")->SetWorldPose(math::Pose(X(0), X(1), (X(2)), X(3), X(4), (X(5)+3.14+alfa)));
 
 #endif
 
