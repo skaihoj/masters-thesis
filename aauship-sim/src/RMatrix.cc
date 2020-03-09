@@ -20,9 +20,13 @@ RMatrix::RMatrix()
          0, 1, 0,
          0, 0, 1;
 
+    Z = Matrix3d::Constant(0.0);
+
     Vec = Vector3d::Constant(0.0);
     
     pi = 3.14159265358979323846;
+
+    J = Matrix<double, 6, 6>::Constant(0.0);
 }
 
 Matrix3d RMatrix::Rx(double x)
@@ -130,4 +134,20 @@ Matrix3d RMatrix::SofL(Vector3d L)
         -L(1),   L(0),     0;
     
     return M;
+}
+
+Matrix<double, 6, 6> RMatrix::JofETa(double phi, double th, double psi)
+{
+    R = Rz(psi)*Ry(th)*Rx(phi);
+
+    M << 1, sin(phi)*tan(th), cos(phi)*tan(th),
+         0, cos(phi)        , -sin(phi),
+         0, sin(phi)/cos(th), cos(phi)/cos(th);
+
+    J.block<3,3>(0,0) = R;
+    J.block<3,3>(0,3) = Z;
+    J.block<3,3>(3,0) = Z;
+    J.block<3,3>(3,3) = M;
+
+    return J;
 }

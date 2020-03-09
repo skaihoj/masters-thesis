@@ -35,9 +35,9 @@ void Buoyancy::UpdateG0(double rho, double g, Matrix<double, 2, 1> Vi, Matrix<do
 {
     g0 << 0,
           0,
-          Vi.sum(),
+          -Vi.sum(),
           -(yi.transpose()*Vi),
-          -(xi.transpose()*Vi),
+          (xi.transpose()*Vi),
           0;
 
     g0 = rho*g*g0;

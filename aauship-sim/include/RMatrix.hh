@@ -17,6 +17,7 @@ class RMatrix
         Matrix3d R;
         Matrix3d vx;
         Matrix3d I;
+        Matrix3d Z;
 
         Vector3d v;
         double s;
@@ -27,6 +28,8 @@ class RMatrix
         double thZ;
 
         Vector3d Vec;
+
+        Matrix<double, 6, 6> J;
     public: 
         // Constructor
         RMatrix();
@@ -42,4 +45,5 @@ class RMatrix
         Vector3d R_ZYX_2EUL(Matrix3d rm);
 
         Matrix3d SofL(Vector3d L);
+        Matrix<double, 6, 6> JofETa(double phi, double th, double psi);
 };
