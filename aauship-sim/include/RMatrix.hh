@@ -46,4 +46,5 @@ class RMatrix
 
         Matrix3d SofL(Vector3d L);
         Matrix<double, 6, 6> JofETa(double phi, double th, double psi);
+	Matrix<double, 6, 1> NED2Global(Matrix<double, 6, 1> Eta);
 };
