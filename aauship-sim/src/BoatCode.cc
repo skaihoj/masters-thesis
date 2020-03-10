@@ -110,15 +110,15 @@ namespace gazebo
 
 #if GAZEBO_MAJOR_VERSION >= 9
             // Hull
-            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), X(2)+0.5, X(3), X(4), (X(5))));
+            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(Y(0), Y(1), Y(2)+0.5, Y(3), Y(4), (Y(5))));
             // Rudder
-            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(X(0), X(1), (X(2)), X(3), X(4), (X(5)+3.14+alfa)));
+            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(Y(0), Y(1), Y(2), Y(3), Y(4), (Y(5)+3.14-alfa)));
 
 #else
             // Hull
-            this->model->GetLink("body")->SetWorldPose(math::Pose(X(0), X(1), X(2)+0.5, X(3), X(4), (X(5))));
+            this->model->GetLink("body")->SetWorldPose(ignition::math::Pose3d(Y(0), Y(1), Y(2)+0.5, Y(3), Y(4), (Y(5))));
             // Rudder
-            this->model->GetLink("rudder")->SetWorldPose(math::Pose(X(0), X(1), (X(2)), X(3), X(4), (X(5)+3.14+alfa)));
+            this->model->GetLink("rudder")->SetWorldPose(ignition::math::Pose3d(Y(0), Y(1), Y(2), Y(3), Y(4), (Y(5)+3.14-alfa)));
 
 #endif
 
@@ -174,6 +174,8 @@ namespace gazebo
             Etad = Etad + DM.Etadd()*sampleTime;
 
             X = X + Etad*sampleTime;
+
+	    Y = RM.NED2Global(X);
 			/*
             // Write to file 
             if(counter < 60000)
@@ -243,6 +245,9 @@ namespace gazebo
             Eigen::Matrix<double, 6, 6> J = Eigen::Matrix<double, 6, 6>::Constant(0.0);
             Eigen::Matrix<double, 6, 6> Jd = Eigen::Matrix<double, 6, 6>::Constant(0.0);
             Eigen::Matrix<double, 6, 6> Jold = Eigen::Matrix<double, 6, 6>::Constant(0.0);
+
+	    // NED to Global transformation variables
+            Eigen::Matrix<double, 6, 1> Y = Eigen::Matrix<double, 6, 1>::Constant(0.0);
 
             // General orientation 
             double phi = 0.0;

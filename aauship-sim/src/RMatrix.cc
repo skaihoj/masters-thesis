@@ -151,3 +151,15 @@ Matrix<double, 6, 6> RMatrix::JofETa(double phi, double th, double psi)
 
     return J;
 }
+
+Matrix<double, 6, 1> RMatrix::NED2Global(Matrix<double, 6, 1> Eta)
+{
+    J.block<3,3>(0,0) = Rx(pi);
+    J.block<3,3>(0,3) = Z;
+    J.block<3,3>(3,0) = Z;
+    J.block<3,3>(3,3) = Rx(pi);
+
+    return J*Eta;
+}
+
+
