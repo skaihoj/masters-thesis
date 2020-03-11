@@ -1,11 +1,8 @@
-from __future__ import division
-from __future__ import absolute_import
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
 from statistics import median
 import math
-from itertools import izip
 
 
 
@@ -37,7 +34,7 @@ def GetClosestPointOf2(A, B, P):
 def GetClosestPoint(obs, P):
     #For the obstacle defined by obs, return the point within it closest to P
     points = []
-    for A, B in izip(obs, obs[1:] + [obs[0]]): #Go through each pair of points 
+    for A, B in zip(obs, obs[1:] + [obs[0]]): #Go through each pair of points 
                                               #|AB|, |BC|, |CD|, |DA|
         #print(A, B)
         point = GetClosestPointOf2(A, B, P)
@@ -93,8 +90,8 @@ field2 = np.zeros((400,400, 3)) #for drawing the path
 
 
 #Compute the direction for each pixel 
-for i in xrange(400):
-   for j in xrange(400):
+for i in range(400):
+   for j in range(400):
        potential = GetGradientVector(obstacles,[i,j], goal)
        field[j,i] = math.atan2(potential[1], potential[0])
 
@@ -107,7 +104,7 @@ for o in obstacles:
 
 #Simulate moving around the potential field
 pos = np.array(start)        
-for i in xrange(1000):
+for i in range(1000):
     dir = potential = GetGradientVector(obstacles, pos, goal)
     dir = dir / np.sqrt(np.sum(dir ** 2))
     cv2.line(field2, tuple(np.int_(pos)), tuple(np.int_(pos + dir)), [1,0,0])
@@ -116,7 +113,7 @@ for i in xrange(1000):
     
     
     
-plt.imshow(field, cmap = u'hsv')
+plt.imshow(field, cmap = 'hsv')
 plt.show()
 plt.imshow(field2)
 plt.show()    
