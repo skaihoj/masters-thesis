@@ -1,6 +1,7 @@
 from casadi import *
 from matplotlib import pyplot as plt
 import numpy  as np
+import pickle
 
 inputs = 10
 
@@ -66,7 +67,7 @@ def trajectory(start, goal, turnrate):
     turn = opti.variable(inputs)
     stepsize = opti.variable()
 
-    x0=[0,0,0,0]
+    x0=[startx,starty,starttheta,0]
     x=x0
     #Fks = [F(x0=x0,p=turn[0:2])]
     for i in range(inputs-1):
@@ -76,18 +77,20 @@ def trajectory(start, goal, turnrate):
         
 
 
-    print(Fk)
+    #print(Fk)
     opti.minimize(stepsize)
     opti.subject_to(Fk['xf'][0]*stepsize == goalx)
     opti.subject_to(Fk['xf'][1]*stepsize == goaly)
     opti.subject_to(Fk['xf'][2]          == goaltheta)
-    opti.subject_to(stepsize < 5)
+    opti.subject_to(stepsize < np.hypot(startx-goalx, starty-goaly)/(inputs - 1)*2)
+    opti.subject_to(stepsize > 0)
+    
     opti.subject_to(turn < 5)
 
     #opti.subject_to(turn[0]       == startcurv)
     #opti.subject_to(turn[-1]      == goalcurv)
-    opti.subject_to(turn/stepsize <  3)
-    opti.subject_to(turn/stepsize >  -3)
+    opti.subject_to(turn/stepsize <  1)
+    opti.subject_to(turn/stepsize >  -1)
 
 
 
@@ -95,7 +98,12 @@ def trajectory(start, goal, turnrate):
     #opti.set_initial(turn, 0.17)
     
 
-    opti.solver('ipopt')
+    
+    p_opts = {}
+    s_opts = {'max_iter': 3000} # iteration limitation
+    opti.solver('ipopt',p_opts,s_opts) # set numerical backend
+
+    #opti.solver('ipopt')
     sol = opti.solve()
 
     opti.set_initial(stepsize, sol.value(stepsize))
@@ -167,22 +175,85 @@ def plot(start, traj):
     #print(data.tolist())
 
     plt.plot(data[:, 0], data[:, 1])
-    plt.axis([0,20,0,20])
+    plt.axis([-20,20,-20,20])
     plt.show()
 
-#x, y, theta, curvature
-start = [0,0,0,0]
-goal = [10,20,0,0]
-
-
-
-try:
-    traj = trajectory(start, goal,0.2)
-    print(traj)
-    plot(start, traj)
-except RuntimeError:
-    print("test")
     
+    
+    
+    
+    
+    
+    
+#x, y, theta, curvature
+#start = [0,0,0,0]
+#goal = [10,20,0,0]
+
+
+#thetas = np.array(range(8))/4*np.pi-np.pi
+thetas_start = [0, np.pi/4]
+thetas_end   = np.arange(0, np.pi+0.1, np.pi/4)
+
+# thetas_start = [0]
+# thetas_end = [0]
+
+
+curvs = [0]
+a = []
+
+searcspace = 10
+for i in range (-searcspace, searcspace+1):
+    for j in range (-searcspace, searcspace+1):
+        a.append([i,j])
+
+A=np.array(a)
+indexlist = np.argsort(np.linalg.norm(A,axis=1))
+sortedA = A[indexlist]
+B=sortedA[1:, :]
+
+MPs = []
+
+
+for theta_start in thetas_start:
+    for theta_end in thetas_end:
+        for curv_start in curvs:
+            for curv_end in curvs:
+   
+                for pos in B:
+                    print([[0,0,theta_start, curv_start], [pos[0], pos[1], theta_start + theta_end, curv_end]])
+                    
+                    try:
+                        traj = trajectory([0,0,theta_start, curv_start], [pos[0], pos[1], theta_start + theta_end, curv_end],0.2)
+                        # print(traj)
+                        # plot(start, traj)
+                    except RuntimeError:
+                        print("test")
+                        continue
+                    else:
+                        MPs.append([[0,0,theta_start, curv_start], [pos[0], pos[1], theta_start + theta_end, curv_end], traj])
+                        break
+    
+
+
+    
+    
+    
+pickle.dump( MPs, open( "MP1.p", "wb" ) )
+
+
+for MP in MPs:   
+    print(MP) 
+    plot(MP[0], MP[2])
+
+
+
+
+
+
+
+
+
+
 '''
 traj = [1.7,np.ones(10)*0.17]
 plot(start, traj)
