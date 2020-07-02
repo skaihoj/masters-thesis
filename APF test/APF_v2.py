@@ -78,14 +78,14 @@ def obstaclesFromImage(imageName):
     obs = []
     for i in range(image.shape[0]):
         for j in range(image.shape[1]):
-            if image[i,j] != 255:
-                obs.append([[j,i],[j,i+1],[j+1,i+1],[j+1,i]])
-    return np.array(obs)*4
+            if image[i,j] == 0:
+                obs.append([[i,j],[i,j+1],[i+1,j+1],[i+1,j]])
+    return obs
 
 
 
 
-
+'''
 obs1 = [[100,100],
         [100,200],
         [200,200],
@@ -96,47 +96,55 @@ obs2 = [[250,100],
         [300,100]]
 
 obstacles = [obs1, obs2]
+'''
+
+#obstacles = obstaclesFromImage("cave.png")
+obstacles = [[[64, 2], [70, 47], [145, 48], [152, 4]], [[219, 56], [290, 63], [291, 128], [218, 128]], [[497, 208], [404, 199], [422, 178], [374, 148], [342, 194], [225, 200], [224, 256], [301, 259], [345, 285], [358, 267], [497, 279]], [[499, 412], [392, 412], [387, 496], [497, 499]], [[323, 376], [219, 382], [221, 329], [322, 326]], [[127, 355], [78, 352], [76, 278], [125, 280]], [[154, 176], [104, 179], [97, 115], [152, 109]]]
 
 
-obstacles = obstaclesFromImage("cave_compact.png")
-
-print(obstacles)
-
-start = [5,5]
-goal = [300, 250]
-        
-field = np.zeros((400,400)) #for drawing direction
-field2 = np.zeros((400,400, 3)) #for drawing the path
+#[[[60, 5], [68, 50], [149, 48], [152, 6]], [[218, 56], [218, 125], [296, 131], [291, 63]], [[497, 209], [411, 200], [424, 178], [376, 150], [344, 193], [221, 201], [222, 257], [298, 259], [341, 284], [359, 270], [498, 280]], [[497, 412], [390, 412], [388, 497], [497, 497]], [[326, 377], [218, 380], [221, 330], [322, 327]], [[125, 355], [83, 354], [77, 278], [126, 278]], [[153, 175], [103, 179], [99, 113], [153, 110]]]
 
 
+
+size = 500
+
+#start = [0,0]
+#goal = [300, 250]
+
+start = [400,350]
+goal = [300, 50]
+
+field = np.zeros((size,size)) #for drawing direction
+field2 = np.ones((size,size, 3))/1.5 #for drawing the path
+
+
+'''
 #Compute the direction for each pixel 
-for i in xrange(400):
-    for j in xrange(400):
-        potential = GetGradientVector(obstacles,[i,j], goal)
-        #print(potential)
-        field[j,i] = math.atan2(potential[1], potential[0])
-
+for i in xrange(size):
+   for j in xrange(size):
+       potential = GetGradientVector(obstacles,[i,j], goal)
+       field[j,i] = math.atan2(potential[1], potential[0])
+'''
        
        
 #draw the obstacles       
 for o in obstacles:
-    cv2.fillConvexPoly(field2, np.array(o), [0,0,1])
-    
+    cv2.fillConvexPoly(field2, np.array(o), [0,0,0])
+  
 
 #Simulate moving around the potential field
 pos = np.array(start)        
 for i in xrange(1000):
-    dir =  np.array(GetGradientVector(obstacles, pos, goal))
+    dir = potential = GetGradientVector(obstacles, pos, goal)
     dir = dir / np.sqrt(np.sum(dir ** 2))
-    print(pos, dir)
-    cv2.line(field2, tuple(np.int_(pos)), tuple(np.int_(pos + dir)), [1,0,0])
+    cv2.line(field2, tuple(np.int_(pos)), tuple(np.int_(pos + dir)), [0,1,0])
     pos = pos + dir
     
     
     
     
-plt.imshow(field, cmap = u'hsv')
-plt.show()
+#plt.imshow(field, cmap = u'hsv')
+#plt.show()
 plt.imshow(field2)
 plt.show()    
 
